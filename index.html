@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Al-Qur'an Online Lengkap</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #f0f0f0;
+}
+
+header {
+    background: #0a7a3d;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 24px;
+}
+
+#container {
+    display: flex;
+}
+
+#suratList {
+    width: 30%;
+    height: 90vh;
+    overflow: auto;
+    background: white;
+    border-right: 1px solid #ccc;
+}
+
+#ayat {
+    width: 70%;
+    height: 90vh;
+    overflow: auto;
+    padding: 20px;
+}
+
+.surat {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.surat:hover {
+    background: #e7ffe7;
+}
+
+.arab {
+    font-size: 26px;
+    text-align: right;
+    margin-top: 15px;
+}
+
+.arti {
+    color: gray;
+    margin-bottom: 15px;
+}
+
+audio {
+    width: 100%;
+    margin-bottom: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>Al-Qur'an Online Lengkap</header>
+
+<div id="container">
+    <div id="suratList"></div>
+    <div id="ayat">
+        <h2>Pilih Surat</h2>
+    </div>
+</div>
+
+<script>
+const suratList = document.getElementById("suratList");
+const ayatDiv = document.getElementById("ayat");
+
+// Ambil daftar surat
+fetch("https://api.alquran.cloud/v1/surah")
+.then(res => res.json())
+.then(data => {
+    data.data.forEach(surat => {
+        let div = document.createElement("div");
+        div.className = "surat";
+        div.innerText = surat.number + ". " + surat.englishName + " (" + surat.name + ")";
+        div.onclick = () => loadSurat(surat.number, surat.englishName);
+        suratList.appendChild(div);
+    });
+});
+
+// Load ayat + terjemahan + audio
+function loadSurat(nomor, nama) {
+    ayatDiv.innerHTML = "<h2>Loading...</h2>";
+
+    Promise.all([
+        fetch(`https://api.alquran.cloud/v1/surah/${nomor}/ar.alafasy`),
+        fetch(`https://api.alquran.cloud/v1/surah/${nomor}/id.indonesian`)
+    ])
+    .then(res => Promise.all(res.map(r => r.json())))
+    .then(data => {
+        const arab = data[0].data.ayahs;
+        const indo = data[1].data.ayahs;
+
+        ayatDiv.innerHTML = `<h2>Surat ${nama}</h2>`;
+
+        arab.forEach((a, i) => {
+            ayatDiv.innerHTML += `
+                <div class="arab">${a.text}</div>
+                <div class="arti">${indo[i].text}</div>
+                <audio controls src="${a.audio}"></audio>
+                <hr>
+            `;
+        });
+    });
+}
+</script>
+
+</body>
+</html>
